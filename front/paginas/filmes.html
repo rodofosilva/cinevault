@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CineVault — Meus Filmes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e5e7eb; }
+    .title-font { font-family: 'Bebas Neue', sans-serif; }
+    .bg-cinema {
+      background: #0a0a0f;
+      background-image:
+        radial-gradient(ellipse at 0% 0%, rgba(220,38,38,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 100% 100%, rgba(251,191,36,0.04) 0%, transparent 50%);
+    }
+    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.07); }
+    .card-film { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); transition: all 0.2s; }
+    .card-film:hover { background: rgba(255,255,255,0.06); border-color: rgba(239,68,68,0.3); transform: translateY(-2px); }
+    .modal-overlay { background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
+    input, select, textarea {
+      background: rgba(255,255,255,0.05) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      color: #e5e7eb !important;
+      border-radius: 0.75rem;
+      padding: 0.625rem 1rem;
+      width: 100%;
+      font-size: 0.875rem;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(239,68,68,0.5) !important; }
+    input::placeholder, textarea::placeholder { color: #4b5563; }
+    select option { background: #1a1a24; color: #e5e7eb; }
+    .star-fill { color: #fbbf24; }
+    .star-empty { color: #374151; }
+    .nota-badge { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0a0a0f; }
+    input:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px #1a1a24 inset !important; -webkit-text-fill-color: #e5e7eb !important; }
+  </style>
+</head>
+<body class="bg-cinema min-h-screen">
+
+  <!-- Header -->
+  <header class="glass sticky top-0 z-40 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <h1 class="title-font text-3xl tracking-widest text-white">CINE<span class="text-red-500">VAULT</span></h1>
+      <div class="flex items-center gap-4">
+        <span id="nome-usuario" class="text-gray-400 text-sm hidden md:block"></span>
+        <button onclick="abrirModalCategoria()"
+          class="text-xs text-gray-400 hover:text-yellow-400 border border-white/10 hover:border-yellow-400/30 px-3 py-2 rounded-lg transition-all">
+          Categorias
+        </button>
+        <button onclick="logout()"
+          class="text-xs text-gray-400 hover:text-red-400 border border-white/10 hover:border-red-400/30 px-3 py-2 rounded-lg transition-all">
+          Sair
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-7xl mx-auto px-4 md:px-6 py-8">
+
+    <!-- Barra de ações -->
+    <div class="flex flex-col md:flex-row gap-3 mb-8">
+      <input id="busca" type="text" placeholder="🔍  Pesquisar filmes..." oninput="debounceCarregar()"
+        class="flex-1"/>
+      <select id="filtro-categoria" onchange="carregarFilmes()" class="md:w-48">
+        <option value="">Todas as categorias</option>
+      </select>
+      <button onclick="abrirModal()"
+        class="bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2.5 rounded-xl transition-all text-sm whitespace-nowrap tracking-wide">
+        + Novo Filme
+      </button>
+    </div>
+
+    <!-- Contador -->
+    <p id="contador" class="text-gray-600 text-xs mb-4 uppercase tracking-wider"></p>
+
+    <!-- Grid de filmes -->
+    <div id="lista-filmes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <!-- Preenchido via JS -->
+    </div>
+
+    <!-- Estado vazio -->
+    <div id="estado-vazio" class="hidden text-center py-20">
+      <div class="text-6xl mb-4">🎬</div>
+      <p class="text-gray-500 text-lg">Nenhum filme encontrado</p>
+      <p class="text-gray-600 text-sm mt-1">Adicione seu primeiro filme!</p>
+    </div>
+
+  </main>
+
+  <!-- ===== MODAL FILME ===== -->
+  <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-overlay">
+    <div class="glass rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 id="modal-titulo" class="title-font text-2xl tracking-widest text-white">NOVO FILME</h2>
+        <button onclick="fecharModal()" class="text-gray-500 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+
+      <input type="hidden" id="filme-id"/>
+
+      <div class="space-y-4">
+        <div>
+          <label class="text-gray-400 text-xs uppercase tracking-widest block mb-1.5">Título *</label>
+          <input id="filme-titulo" type="text" placeholder="Nome do filme"/>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-gray-400 text-xs uppercase tracking-widest block mb-1.5">Diretor *</label>
+            <input id="filme-diretor" type="text" placeholder="Nome do diretor"/>
+          </div>
+          <div>
+            <label class="text-gray-400 text-xs uppercase tracking-widest block mb-1.5">Ano *</label>
+            <input id="filme-ano" type="number" placeholder="2024" min="1888" max="2099"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-gray-400 text-xs uppercase tracking-widest block mb-1.5">Categoria</label>
+            <select id="filme-categoria">
+              <option value="">Sem categoria</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-gray-400 text-xs uppercase tracking-widest block mb-1.5">Nota (0–10)</label>
+            <input id="filme-nota" type="number" placeholder="8.5" min="0" max="10" step="0.1"/>
+          </div>
+        </div>
+        <div>
+          <label class="text-gray-400 text-xs uppercase tracking-widest block mb-1.5">URL do Poster</label>
+          <input id="filme-poster" type="url" placeholder="https://..."/>
+        </div>
+        <div>
+          <label class="text-gray-400 text-xs uppercase tracking-widest block mb-1.5">Sinopse</label>
+          <textarea id="filme-sinopse" rows="3" placeholder="Descrição do filme..."></textarea>
+        </div>
+      </div>
+
+      <div id="modal-erro" class="text-red-400 text-xs mt-4 hidden"></div>
+
+      <div class="flex gap-3 mt-6">
+        <button onclick="fecharModal()" class="flex-1 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 py-2.5 rounded-xl text-sm transition-all">Cancelar</button>
+        <button onclick="salvarFilme()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-2.5 rounded-xl text-sm transition-all tracking-wide">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL CATEGORIAS ===== -->
+  <div id="modal-cat" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-overlay">
+    <div class="glass rounded-2xl w-full max-w-sm p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="title-font text-2xl tracking-widest text-white">CATEGORIAS</h2>
+        <button onclick="fecharModalCategoria()" class="text-gray-500 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <div class="flex gap-2 mb-4">
+        <input id="nova-categoria" type="text" placeholder="Nova categoria..." class="flex-1"/>
+        <button onclick="adicionarCategoria()" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-4 rounded-xl text-sm transition-all">+</button>
+      </div>
+      <ul id="lista-categorias" class="space-y-2 max-h-60 overflow-y-auto"></ul>
+    </div>
+  </div>
+
+  <script>
+    const API = '';
+    let debounceTimer;
+
+    // Proteção de rota
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+    if (usuario.nome) document.getElementById('nome-usuario').textContent = `Olá, ${usuario.nome}`;
+    document.getElementById('nome-usuario').classList.remove('hidden');
+
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('usuario');
+      window.location.href = '/';
+    }
+
+    // ===== FILMES =====
+    async function carregarFilmes() {
+      const busca = document.getElementById('busca').value.trim();
+      const categoria_id = document.getElementById('filtro-categoria').value;
+      let url = '/api/filmes?';
+      if (busca) url += `busca=${encodeURIComponent(busca)}&`;
+      if (categoria_id) url += `categoria_id=${categoria_id}`;
+
+      try {
+        const res = await fetch(url, { headers: authHeaders() });
+        if (res.status === 401 || res.status === 403) { logout(); return; }
+        const filmes = await res.json();
+        renderFilmes(filmes);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function debounceCarregar() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(carregarFilmes, 400);
+    }
+
+    function renderFilmes(filmes) {
+      const lista = document.getElementById('lista-filmes');
+      const vazio = document.getElementById('estado-vazio');
+      const contador = document.getElementById('contador');
+
+      contador.textContent = `${filmes.length} filme${filmes.length !== 1 ? 's' : ''}`;
+
+      if (filmes.length === 0) {
+        lista.innerHTML = '';
+        vazio.classList.remove('hidden');
+        return;
+      }
+      vazio.classList.add('hidden');
+
+      lista.innerHTML = filmes.map(f => `
+        <div class="card-film rounded-2xl overflow-hidden flex flex-col">
+          ${f.poster_url
+            ? `<div class="h-48 overflow-hidden"><img src="${f.poster_url}" alt="${f.titulo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\\'h-48 flex items-center justify-center bg-white/5 text-4xl\\'>🎬</div>'"/></div>`
+            : `<div class="h-48 flex items-center justify-center bg-white/5 text-4xl">🎬</div>`}
+          <div class="p-4 flex flex-col flex-1">
+            <div class="flex items-start justify-between gap-2 mb-1">
+              <h3 class="font-semibold text-white text-sm leading-snug">${f.titulo}</h3>
+              ${f.nota != null ? `<span class="nota-badge text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap">${parseFloat(f.nota).toFixed(1)}</span>` : ''}
+            </div>
+            <p class="text-gray-500 text-xs mb-1">${f.diretor} · ${f.ano}</p>
+            ${f.categorias ? `<span class="text-yellow-500/70 text-xs">${f.categorias.nome}</span>` : ''}
+            ${f.sinopse ? `<p class="text-gray-600 text-xs mt-2 line-clamp-2">${f.sinopse}</p>` : ''}
+            <div class="flex gap-2 mt-auto pt-3">
+              <button onclick='abrirModalEditar(${JSON.stringify(f)})' class="flex-1 text-xs border border-white/10 hover:border-yellow-400/40 text-gray-400 hover:text-yellow-400 py-1.5 rounded-lg transition-all">Editar</button>
+              <button onclick="excluirFilme('${f.id}', '${f.titulo.replace(/'/g,"\\'")}', this)" class="flex-1 text-xs border border-white/10 hover:border-red-400/40 text-gray-400 hover:text-red-400 py-1.5 rounded-lg transition-all">Excluir</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function salvarFilme() {
+      const id = document.getElementById('filme-id').value;
+      const body = {
+        titulo: document.getElementById('filme-titulo').value.trim(),
+        diretor: document.getElementById('filme-diretor').value.trim(),
+        ano: parseInt(document.getElementById('filme-ano').value),
+        sinopse: document.getElementById('filme-sinopse').value.trim(),
+        nota: document.getElementById('filme-nota').value ? parseFloat(document.getElementById('filme-nota').value) : null,
+        categoria_id: document.getElementById('filme-categoria').value || null,
+        poster_url: document.getElementById('filme-poster').value.trim() || null,
+      };
+
+      const erroEl = document.getElementById('modal-erro');
+      erroEl.classList.add('hidden');
+
+      if (!body.titulo || !body.diretor || !body.ano) {
+        erroEl.textContent = 'Título, diretor e ano são obrigatórios.';
+        erroEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const url = id ? `/api/filmes/${id}` : '/api/filmes';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        fecharModal();
+        carregarFilmes();
+      } catch (err) {
+        erroEl.textContent = err.message;
+        erroEl.classList.remove('hidden');
+      }
+    }
+
+    async function excluirFilme(id, titulo, btn) {
+      if (!confirm(`Excluir "${titulo}"?`)) return;
+      try {
+        const res = await fetch(`/api/filmes/${id}`, { method: 'DELETE', headers: authHeaders() });
+        if (!res.ok) throw new Error();
+        btn.closest('.card-film').remove();
+        carregarFilmes();
+      } catch (err) {
+        alert('Erro ao excluir filme.');
+      }
+    }
+
+    // ===== MODAL FILME =====
+    function abrirModal() {
+      document.getElementById('filme-id').value = '';
+      document.getElementById('filme-titulo').value = '';
+      document.getElementById('filme-diretor').value = '';
+      document.getElementById('filme-ano').value = '';
+      document.getElementById('filme-sinopse').value = '';
+      document.getElementById('filme-nota').value = '';
+      document.getElementById('filme-poster').value = '';
+      document.getElementById('filme-categoria').value = '';
+      document.getElementById('modal-titulo').textContent = 'NOVO FILME';
+      document.getElementById('modal-erro').classList.add('hidden');
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function abrirModalEditar(f) {
+      document.getElementById('filme-id').value = f.id;
+      document.getElementById('filme-titulo').value = f.titulo || '';
+      document.getElementById('filme-diretor').value = f.diretor || '';
+      document.getElementById('filme-ano').value = f.ano || '';
+      document.getElementById('filme-sinopse').value = f.sinopse || '';
+      document.getElementById('filme-nota').value = f.nota ?? '';
+      document.getElementById('filme-poster').value = f.poster_url || '';
+      document.getElementById('filme-categoria').value = f.categoria_id || '';
+      document.getElementById('modal-titulo').textContent = 'EDITAR FILME';
+      document.getElementById('modal-erro').classList.add('hidden');
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function fecharModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    // ===== CATEGORIAS =====
+    async function carregarCategorias() {
+      try {
+        const res = await fetch('/api/categorias', { headers: authHeaders() });
+        const cats = await res.json();
+
+        // Preenche selects
+        const opts = `<option value="">Sem categoria</option>` + cats.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        document.getElementById('filme-categoria').innerHTML = opts;
+
+        const filtro = `<option value="">Todas as categorias</option>` + cats.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        document.getElementById('filtro-categoria').innerHTML = filtro;
+
+        // Lista no modal de categorias
+        const lista = document.getElementById('lista-categorias');
+        lista.innerHTML = cats.length === 0
+          ? '<li class="text-gray-600 text-sm text-center py-4">Nenhuma categoria</li>'
+          : cats.map(c => `
+            <li class="flex items-center justify-between py-2 border-b border-white/5">
+              <span class="text-gray-300 text-sm">${c.nome}</span>
+              <button onclick="excluirCategoria('${c.id}')" class="text-gray-600 hover:text-red-400 text-xs transition-colors">✕</button>
+            </li>`).join('');
+      } catch (err) { console.error(err); }
+    }
+
+    async function adicionarCategoria() {
+      const nome = document.getElementById('nova-categoria').value.trim();
+      if (!nome) return;
+      try {
+        const res = await fetch('/api/categorias', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ nome }) });
+        if (!res.ok) throw new Error();
+        document.getElementById('nova-categoria').value = '';
+        carregarCategorias();
+      } catch (err) { alert('Erro ao adicionar categoria.'); }
+    }
+
+    async function excluirCategoria(id) {
+      if (!confirm('Excluir esta categoria?')) return;
+      try {
+        await fetch(`/api/categorias/${id}`, { method: 'DELETE', headers: authHeaders() });
+        carregarCategorias();
+      } catch (err) { alert('Erro ao excluir.'); }
+    }
+
+    function abrirModalCategoria() {
+      carregarCategorias();
+      document.getElementById('modal-cat').classList.remove('hidden');
+    }
+
+    function fecharModalCategoria() {
+      document.getElementById('modal-cat').classList.add('hidden');
+      carregarFilmes();
+    }
+
+    // Fecha modal clicando fora
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) fecharModal();
+    });
+    document.getElementById('modal-cat').addEventListener('click', function(e) {
+      if (e.target === this) fecharModalCategoria();
+    });
+
+    // Enter no input de categoria
+    document.getElementById('nova-categoria').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') adicionarCategoria();
+    });
+
+    // Init
+    carregarCategorias();
+    carregarFilmes();
+  </script>
+</body>
+</html>

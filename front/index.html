@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CineVault — Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .title-font { font-family: 'Bebas Neue', sans-serif; }
+    .bg-cinema {
+      background: #0a0a0f;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(220, 38, 38, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(251, 191, 36, 0.05) 0%, transparent 50%);
+    }
+    .glass {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    input:-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 30px #1a1a24 inset !important;
+      -webkit-text-fill-color: #e5e7eb !important;
+    }
+    .tab-active {
+      color: #ef4444;
+      border-bottom: 2px solid #ef4444;
+    }
+    .tab-inactive {
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+    }
+  </style>
+</head>
+<body class="bg-cinema min-h-screen flex items-center justify-center px-4">
+
+  <div class="w-full max-w-md">
+    <!-- Logo -->
+    <div class="text-center mb-10">
+      <h1 class="title-font text-6xl text-white tracking-widest">CINE<span class="text-red-500">VAULT</span></h1>
+      <p class="text-gray-500 text-sm mt-1 tracking-widest uppercase">Sua coleção de filmes</p>
+    </div>
+
+    <!-- Card -->
+    <div class="glass rounded-2xl p-8">
+      <!-- Tabs -->
+      <div class="flex mb-8 gap-6 border-b border-white/10 pb-0">
+        <button id="tab-login" onclick="showTab('login')" class="tab-active pb-3 text-sm font-semibold tracking-wider uppercase transition-all">Entrar</button>
+        <button id="tab-register" onclick="showTab('register')" class="tab-inactive pb-3 text-sm font-semibold tracking-wider uppercase transition-all">Cadastrar</button>
+      </div>
+
+      <!-- Formulário Login -->
+      <div id="form-login">
+        <div class="space-y-4">
+          <div>
+            <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Email</label>
+            <input id="login-email" type="email" placeholder="seu@email.com"
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-600 focus:outline-none focus:border-red-500/50 transition-colors text-sm"/>
+          </div>
+          <div>
+            <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Senha</label>
+            <input id="login-senha" type="password" placeholder="••••••••"
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-600 focus:outline-none focus:border-red-500/50 transition-colors text-sm"/>
+          </div>
+          <div id="login-erro" class="text-red-400 text-xs hidden"></div>
+          <button onclick="fazerLogin()"
+            class="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 tracking-wider uppercase text-sm mt-2">
+            Entrar
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulário Cadastro -->
+      <div id="form-register" class="hidden">
+        <div class="space-y-4">
+          <div>
+            <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Nome</label>
+            <input id="reg-nome" type="text" placeholder="Seu nome"
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-600 focus:outline-none focus:border-red-500/50 transition-colors text-sm"/>
+          </div>
+          <div>
+            <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Email</label>
+            <input id="reg-email" type="email" placeholder="seu@email.com"
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-600 focus:outline-none focus:border-red-500/50 transition-colors text-sm"/>
+          </div>
+          <div>
+            <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Senha</label>
+            <input id="reg-senha" type="password" placeholder="••••••••"
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-600 focus:outline-none focus:border-red-500/50 transition-colors text-sm"/>
+          </div>
+          <div id="reg-erro" class="text-red-400 text-xs hidden"></div>
+          <div id="reg-ok" class="text-green-400 text-xs hidden"></div>
+          <button onclick="fazerCadastro()"
+            class="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 tracking-wider uppercase text-sm mt-2">
+            Criar Conta
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Se já está logado, vai direto para filmes
+    if (localStorage.getItem('token')) {
+      window.location.href = '/paginas/filmes.html';
+    }
+
+    function showTab(tab) {
+      const isLogin = tab === 'login';
+      document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+      document.getElementById('form-register').classList.toggle('hidden', isLogin);
+      document.getElementById('tab-login').className = isLogin ? 'tab-active pb-3 text-sm font-semibold tracking-wider uppercase transition-all' : 'tab-inactive pb-3 text-sm font-semibold tracking-wider uppercase transition-all';
+      document.getElementById('tab-register').className = !isLogin ? 'tab-active pb-3 text-sm font-semibold tracking-wider uppercase transition-all' : 'tab-inactive pb-3 text-sm font-semibold tracking-wider uppercase transition-all';
+    }
+
+    async function fazerLogin() {
+      const email = document.getElementById('login-email').value.trim();
+      const senha = document.getElementById('login-senha').value;
+      const erroEl = document.getElementById('login-erro');
+      erroEl.classList.add('hidden');
+
+      if (!email || !senha) {
+        erroEl.textContent = 'Preencha todos os campos.';
+        erroEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('usuario', JSON.stringify(data.usuario));
+        window.location.href = '/paginas/filmes.html';
+      } catch (err) {
+        erroEl.textContent = err.message;
+        erroEl.classList.remove('hidden');
+      }
+    }
+
+    async function fazerCadastro() {
+      const nome = document.getElementById('reg-nome').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const senha = document.getElementById('reg-senha').value;
+      const erroEl = document.getElementById('reg-erro');
+      const okEl = document.getElementById('reg-ok');
+      erroEl.classList.add('hidden');
+      okEl.classList.add('hidden');
+
+      if (!nome || !email || !senha) {
+        erroEl.textContent = 'Preencha todos os campos.';
+        erroEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, email, senha })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('usuario', JSON.stringify(data.usuario));
+        window.location.href = '/paginas/filmes.html';
+      } catch (err) {
+        erroEl.textContent = err.message;
+        erroEl.classList.remove('hidden');
+      }
+    }
+
+    // Enter nos inputs
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const loginVisible = !document.getElementById('form-login').classList.contains('hidden');
+        loginVisible ? fazerLogin() : fazerCadastro();
+      }
+    });
+  </script>
+</body>
+</html>
