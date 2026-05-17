@@ -173,3 +173,6 @@ sistema-filmes/
 ## 👨‍💻 Desenvolvido para
 Atividade Prática — Desenvolvimento Full Stack com JavaScript, Node.js + Supabase  
 Curso: Desenvolvimento Full Stack — UNIFSA
+## 👨‍💻 Desenvolvido por
+
+**Rodofo Dheymison Ferreira Silva**
